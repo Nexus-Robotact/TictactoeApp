@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../theme/app_colors.dart';
 import '../../../theme/app_text_style.dart';
 import '../../domain/entities/player.dart';
 
@@ -9,25 +8,31 @@ class CellView extends StatelessWidget {
   final VoidCallback onTap;
   final bool enabled;
 
+  // 칸 배경(일반=그레이, 승리 시=애니메이션 컬러)
+  final Color backgroundColor;
+
+  // X/O 텍스트 색
+  final Color symbolColor;
+
   const CellView({
     super.key,
     required this.value,
     required this.onTap,
     required this.enabled,
+    required this.backgroundColor,
+    required this.symbolColor,
   });
 
   @override
   Widget build(BuildContext context) {
     final symbol = value?.symbol ?? '';
-    final color = value == Player.o ? AppColors.oColor : AppColors.xColor;
 
     return SizedBox.expand(
-      child: Listener(
-        behavior: HitTestBehavior.opaque,
-        // ✅ 누르는 순간 바로 실행 (손 떼기 기다리지 않음)
-        onPointerDown: enabled ? (_) => onTap() : null,
-        child: ColoredBox(
-          color: AppColors.cellBg, // 네모 칸 배경(진회색 등)
+      child: ColoredBox(
+        color: backgroundColor,
+        child: Listener(
+          behavior: HitTestBehavior.opaque,
+          onPointerDown: enabled ? (_) => onTap() : null,
           child: Center(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 120),
@@ -46,7 +51,7 @@ class CellView extends StatelessWidget {
                   child: Text(
                     symbol,
                     key: ValueKey(symbol),
-                    style: AppTextStyle.cell.copyWith(color: color),
+                    style: AppTextStyle.cell.copyWith(color: symbolColor),
                   ),
                 ),
               ),

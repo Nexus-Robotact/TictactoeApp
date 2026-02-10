@@ -24,6 +24,7 @@ class TicTacToeController extends ChangeNotifier {
       board: result.board,
       nextPlayer: result.nextPlayer,
       status: result.status,
+      winningLine: result.winningLine,
     );
 
     notifyListeners();
@@ -35,6 +36,7 @@ class TicTacToeController extends ChangeNotifier {
       board: result.board,
       nextPlayer: result.nextPlayer,
       status: result.status,
+      winningLine: result.winningLine,
     );
     notifyListeners();
   }

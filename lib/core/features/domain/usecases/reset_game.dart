@@ -6,11 +6,13 @@ class ResetResult {
   final Board board;
   final Player nextPlayer;
   final GameStatus status;
+  final List<int> winningLine;
 
   const ResetResult({
     required this.board,
     required this.nextPlayer,
     required this.status,
+    required this.winningLine,
   });
 }
 
@@ -20,6 +22,7 @@ class ResetGame {
       board: Board.empty(),
       nextPlayer: Player.x,
       status: GameStatus.playing,
+      winningLine: const [],
     );
   }
 }

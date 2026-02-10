@@ -1,17 +1,19 @@
-import '../services/winner_checker.dart';
 import '../entities/board.dart';
 import '../entities/game_status.dart';
 import '../entities/player.dart';
+import '../services/winner_checker.dart';
 
 class MoveResult {
   final Board board;
   final Player nextPlayer;
   final GameStatus status;
+  final List<int> winningLine;
 
   const MoveResult({
     required this.board,
     required this.nextPlayer,
     required this.status,
+    required this.winningLine,
   });
 }
 
@@ -26,31 +28,50 @@ class MakeMove {
     required GameStatus status,
     required int index,
   }) {
-    // 이미 게임이 끝났으면 무시
+    // 게임 끝났으면 무시
     if (status != GameStatus.playing) {
-      return MoveResult(board: board, nextPlayer: nextPlayer, status: status);
+      return MoveResult(
+        board: board,
+        nextPlayer: nextPlayer,
+        status: status,
+        winningLine: const [],
+      );
     }
 
-    // 범위 체크
     if (index < 0 || index > 8) {
-      return MoveResult(board: board, nextPlayer: nextPlayer, status: status);
+      return MoveResult(
+        board: board,
+        nextPlayer: nextPlayer,
+        status: status,
+        winningLine: const [],
+      );
     }
 
     // 이미 둔 칸이면 무시
     if (board.at(index) != null) {
-      return MoveResult(board: board, nextPlayer: nextPlayer, status: status);
+      return MoveResult(
+        board: board,
+        nextPlayer: nextPlayer,
+        status: status,
+        winningLine: const [],
+      );
     }
 
     // 수 두기
     final placed = board.place(index, nextPlayer);
 
-    // 승리/무승부 판정
-    final nextStatus = _checker.check(placed);
+    // 판정 (승리/무승부 + winningLine)
+    final check = _checker.check(placed);
 
     // 진행중일 때만 턴 변경
     final next =
-    nextStatus == GameStatus.playing ? nextPlayer.opposite : nextPlayer;
+    check.status == GameStatus.playing ? nextPlayer.opposite : nextPlayer;
 
-    return MoveResult(board: placed, nextPlayer: next, status: nextStatus);
+    return MoveResult(
+      board: placed,
+      nextPlayer: next,
+      status: check.status,
+      winningLine: check.winningLine,
+    );
   }
 }

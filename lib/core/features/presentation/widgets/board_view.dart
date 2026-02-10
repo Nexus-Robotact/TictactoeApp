@@ -1,27 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/animation.dart';
 
 import '../../../theme/app_colors.dart';
 import '../../domain/entities/board.dart';
+import '../../domain/entities/game_status.dart';
+import '../../domain/entities/player.dart';
 import 'cell_view.dart';
 
-class BoardView extends StatelessWidget {
+class BoardView extends StatefulWidget {
   final Board board;
   final void Function(int index) onTap;
-
-  /// 게임 진행 중이면 true
   final bool enabled;
+
+  // ✅ 승리한 3칸
+  final List<int> winningLine;
+
+  // ✅ 현재 상태(누가 이겼는지)
+  final GameStatus status;
 
   const BoardView({
     super.key,
     required this.board,
     required this.onTap,
     required this.enabled,
+    required this.winningLine,
+    required this.status,
   });
+
+  @override
+  State<BoardView> createState() => _BoardViewState();
+}
+
+class _BoardViewState extends State<BoardView> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _t;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _t = CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOutCubic);
+  }
+
+  //easeOutCubic-> 더 부드럽게 InOut 으로 변경
+
+  @override
+  void didUpdateWidget(covariant BoardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final hadWin = oldWidget.winningLine.isNotEmpty &&
+        (oldWidget.status == GameStatus.xWon || oldWidget.status == GameStatus.oWon);
+
+    final hasWin = widget.winningLine.isNotEmpty &&
+        (widget.status == GameStatus.xWon || widget.status == GameStatus.oWon);
+
+    //  새로 승리 발생하면 애니메이션 실행
+    if (!hadWin && hasWin) {
+      _controller.forward(from: 0);
+    }
+
+    //  리셋되면 애니메이션 초기화
+    if (oldWidget.status != GameStatus.playing && widget.status == GameStatus.playing) {
+      _controller.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color? _targetHighlight() {
+    if (widget.status == GameStatus.xWon) return AppColors.xWinHighlight;
+    if (widget.status == GameStatus.oWon) return AppColors.oWinHighlight;
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     const radius = 22.0;
     const gridStroke = 8.0;
+
+    final target = _targetHighlight();
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -37,29 +103,47 @@ class BoardView extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: Material(
-          color: AppColors.boardBg, // 판 바닥색
+          color: AppColors.boardBg,
           child: Stack(
             children: [
-              // 1) 먼저 9칸 타일을 깐다 (타일 배경=회색은 CellView가 담당)
+              //  1) 타일
               Positioned.fill(
-                child: GridView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: 9,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                  ),
-                  itemBuilder: (context, index) {
-                    return CellView(
-                      value: board.at(index),
-                      enabled: enabled,
-                      onTap: () => onTap(index),
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) {
+                    return GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.zero,
+                      itemCount: 9,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                      ),
+                      itemBuilder: (context, index) {
+                        final isWinCell = widget.winningLine.contains(index);
+                        final base = AppColors.cellBg;
+
+                        //  승리한 3칸만 lerp로 색 변화
+                        final bg = (isWinCell && target != null)
+                            ? Color.lerp(base, target, _t.value) ?? base
+                            : base;
+
+                        final value = widget.board.at(index);
+                        final symbolColor = value == Player.o ? AppColors.oColor : AppColors.xColor;
+
+                        return CellView(
+                          value: value,
+                          enabled: widget.enabled,
+                          onTap: () => widget.onTap(index),
+                          backgroundColor: bg,
+                          symbolColor: symbolColor,
+                        );
+                      },
                     );
                   },
                 ),
               ),
 
-              // 2) 그 위에 격자선(검정)을 그린다 (터치 안 막게 IgnorePointer)
+              // 2) 격자선(위에 덮기 + 터치 방해 X)
               Positioned.fill(
                 child: IgnorePointer(
                   child: CustomPaint(
@@ -97,11 +181,9 @@ class _GridPainter extends CustomPainter {
     final thirdW = size.width / 3;
     final thirdH = size.height / 3;
 
-    // 세로 2줄
     canvas.drawLine(Offset(thirdW, 0), Offset(thirdW, size.height), paint);
     canvas.drawLine(Offset(thirdW * 2, 0), Offset(thirdW * 2, size.height), paint);
 
-    // 가로 2줄
     canvas.drawLine(Offset(0, thirdH), Offset(size.width, thirdH), paint);
     canvas.drawLine(Offset(0, thirdH * 2), Offset(size.width, thirdH * 2), paint);
   }
