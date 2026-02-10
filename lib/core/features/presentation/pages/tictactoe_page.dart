@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../application/tictactoe_controller.dart';
+import '../../domain/entities/game_status.dart';
 import '../widgets/board_view.dart';
 import '../widgets/control_bar.dart';
 import '../widgets/status_bar.dart';
@@ -63,6 +64,7 @@ class _TicTacToePageState extends State<TicTacToePage> {
                                 height: boardSize,
                                 child: BoardView(
                                   board: state.board,
+                                  enabled: state.status == GameStatus.playing,
                                   onTap: controller.onCellTap,
                                 ),
                               ),

@@ -1,7 +1,7 @@
+import '../services/winner_checker.dart';
 import '../entities/board.dart';
 import '../entities/game_status.dart';
 import '../entities/player.dart';
-import '../services/winner_checker.dart';
 
 class MoveResult {
   final Board board;
